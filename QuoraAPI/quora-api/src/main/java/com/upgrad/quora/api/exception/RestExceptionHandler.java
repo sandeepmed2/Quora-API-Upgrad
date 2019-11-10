@@ -30,7 +30,7 @@ public class RestExceptionHandler {
     @ExceptionHandler(SignOutRestrictedException.class)
     public ResponseEntity<ErrorResponse> signoutRestrictedException(SignOutRestrictedException ex, WebRequest request){
         return new ResponseEntity<ErrorResponse>(
-                new ErrorResponse().code(ex.getCode()).message(ex.getErrorMessage()), HttpStatus.NOT_FOUND //Http status code 404 when the provided access token is not available in database
+                new ErrorResponse().code(ex.getCode()).message(ex.getErrorMessage()), HttpStatus.UNAUTHORIZED //Http status code 401 when the provided access token is not available in database
         );
     }
 }
