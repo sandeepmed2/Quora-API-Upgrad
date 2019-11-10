@@ -1,9 +1,7 @@
 package com.upgrad.quora.api.exception;
 
 import com.upgrad.quora.api.model.ErrorResponse;
-import com.upgrad.quora.service.exception.AuthenticationFailedException;
-import com.upgrad.quora.service.exception.SignOutRestrictedException;
-import com.upgrad.quora.service.exception.SignUpRestrictedException;
+import com.upgrad.quora.service.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -31,6 +29,20 @@ public class RestExceptionHandler {
     public ResponseEntity<ErrorResponse> signoutRestrictedException(SignOutRestrictedException ex, WebRequest request){
         return new ResponseEntity<ErrorResponse>(
                 new ErrorResponse().code(ex.getCode()).message(ex.getErrorMessage()), HttpStatus.UNAUTHORIZED //Http status code 401 when the provided access token is not available in database
+        );
+    }
+
+    @ExceptionHandler(AuthorizationFailedException.class)
+    public ResponseEntity<ErrorResponse> authorizationFailedException(AuthorizationFailedException ex, WebRequest request){
+        return new ResponseEntity<ErrorResponse>(
+                new ErrorResponse().code(ex.getCode()).message(ex.getErrorMessage()), HttpStatus.UNAUTHORIZED //Http status code 401 when supplied access token is invalid
+        );
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> userNotFoundException(UserNotFoundException ex, WebRequest request){
+        return new ResponseEntity<ErrorResponse>(
+                new ErrorResponse().code(ex.getCode()).message(ex.getErrorMessage()), HttpStatus.NOT_FOUND //Http status code 404 when given user id does not exist in database
         );
     }
 }
