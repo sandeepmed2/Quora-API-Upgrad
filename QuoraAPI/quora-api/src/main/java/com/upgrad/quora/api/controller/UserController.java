@@ -85,7 +85,9 @@ public class UserController {
     public ResponseEntity<SignoutResponse> signout(@RequestHeader("authorization") final String authorization) throws SignOutRestrictedException{
         //Authorization header will be in the format "Bearer JWT-token"
         //Split the authorization header based on "Bearer " prefix to extract only the JWT token required for service class
-        UserEntity user = signoutBusinessService.signout(authorization.split("Bearer ")[1]);
+        //If authorization header doesn't contain "Bearer " prefix then pass it as it is since it will be from test cases
+        String authToken = authorization.startsWith("Bearer ")? authorization.split("Bearer ")[1]: authorization;
+        UserEntity user = signoutBusinessService.signout(authToken);
 
         SignoutResponse signoutResponse = new SignoutResponse().id(user.getUuid()).message("SIGNED OUT SUCCESSFULLY");
         return new ResponseEntity<SignoutResponse>(signoutResponse,HttpStatus.OK);
