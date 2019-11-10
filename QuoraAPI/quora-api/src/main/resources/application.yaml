@@ -6,17 +6,18 @@ server:
 spring:
 
   application:
-    name:
+    name: quora-api
 
   datasource:
     driverClassName: org.postgresql.Driver
     url: jdbc:postgresql://localhost:5432/quora
     username: postgres
-    password: password
+    password: postgres
 
   jpa:
     properties:
       hibernate:
+        show_sql: true
         temp:
           use_jdbc_metadata_defaults: false
     database-platform: org.hibernate.dialect.PostgreSQL9Dialect
