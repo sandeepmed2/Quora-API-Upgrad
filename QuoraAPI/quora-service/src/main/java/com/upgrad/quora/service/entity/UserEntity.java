@@ -8,12 +8,14 @@ import javax.validation.constraints.Size;
 import java.io.Serializable;
 
 @Entity
+
 @Table(name = "USERS", schema = "public")
 @NamedQueries(
         {
                 @NamedQuery(name = "userByUserName", query = "SELECT u FROM UserEntity u WHERE u.userName = :userName"),
                 @NamedQuery(name = "userByEmail", query = "SELECT u FROM UserEntity u WHERE u.email = :emailAddress"),
-                @NamedQuery(name = "userByUuid", query = "SELECT u FROM UserEntity u WHERE u.uuid = :uuid")
+                @NamedQuery(name = "userByUuid", query = "SELECT u FROM UserEntity u WHERE u.uuid = :uuid"),
+                @NamedQuery(name = "userByContent", query = "SELECT u FROM UserEntity u WHERE u.content = :content")
         }
 )
 public class UserEntity implements Serializable {
@@ -27,6 +29,21 @@ public class UserEntity implements Serializable {
     @NotNull
     @Size(max = 200)
     private String uuid;
+
+    @Column(name = "content")
+    @NotNull
+    @Size(max = 500)
+    private String content;
+
+    @Column(name = "date")
+    @NotNull
+    @Size(max = 6)
+    private String date;
+
+    @Column(name = "user_id", unique = true)
+    @NotNull
+    @Size(max = 30)
+    private String user_id;
 
     @Column(name = "firstname")
     @NotNull
@@ -97,6 +114,18 @@ public class UserEntity implements Serializable {
         return uuid;
     }
 
+    public String getcontent() {
+        return content;
+    }
+
+    public String date() {
+        return date;
+    }
+
+    public String getUser_Id() {
+        return user_id;
+    }
+}
     public void setUuid(String uuid) {
         this.uuid = uuid;
     }
