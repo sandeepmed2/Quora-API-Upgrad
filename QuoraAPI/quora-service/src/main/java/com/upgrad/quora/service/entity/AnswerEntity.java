@@ -1,5 +1,8 @@
 package com.upgrad.quora.service.entity;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
@@ -37,10 +40,12 @@ public class AnswerEntity implements Serializable {
 
     @ManyToOne
     @JoinColumn(name = "USER_ID")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private UserEntity user;
 
     @ManyToOne
     @JoinColumn(name = "QUESTION_ID")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private QuestionEntity question;
 
 
