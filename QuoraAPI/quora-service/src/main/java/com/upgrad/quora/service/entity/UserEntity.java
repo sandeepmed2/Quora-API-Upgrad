@@ -8,6 +8,7 @@ import javax.validation.constraints.Size;
 import java.io.Serializable;
 
 @Entity
+
 @Table(name = "USERS", schema = "public")
 @NamedQueries(
         {

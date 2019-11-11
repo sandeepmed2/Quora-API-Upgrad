@@ -19,6 +19,17 @@ public class UserDao {
         return userEntity;
     }
 
+
+    public UserEntity getUserByContent(final String content){
+        try {
+            return entityManager.createNamedQuery("userByContent", UserEntity.class).setParameter("content", content)
+              .getSingleResult();
+        }
+        catch (NoResultException nre){
+            return null;
+        }
+    }
+
     public UserEntity getUserByUserName(final String userName){
         try {
             return entityManager.createNamedQuery("userByUserName", UserEntity.class).setParameter("userName", userName)
@@ -66,5 +77,9 @@ public class UserDao {
 
     public void updateLogOutTime(final UserAuthTokenEntity userAuthTokenEntity){
         entityManager.merge(userAuthTokenEntity);
+    }
+
+    public void deleteUser(final UserEntity userEntity){
+        entityManager.remove(userEntity);
     }
 }

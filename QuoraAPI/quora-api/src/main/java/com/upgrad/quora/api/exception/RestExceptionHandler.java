@@ -45,4 +45,18 @@ public class RestExceptionHandler {
                 new ErrorResponse().code(ex.getCode()).message(ex.getErrorMessage()), HttpStatus.NOT_FOUND //Http status code 404 when given user id does not exist in database
         );
     }
+
+    @ExceptionHandler(InvalidQuestionException.class)
+    public ResponseEntity<ErrorResponse> invalidQuestionException(InvalidQuestionException ex, WebRequest request){
+        return new ResponseEntity<ErrorResponse>(
+                new ErrorResponse().code(ex.getCode()).message(ex.getErrorMessage()), HttpStatus.NOT_FOUND //Http status code 404 when given question does not exist in database
+        );
+    }
+
+    @ExceptionHandler(AnswerNotFoundException.class)
+    public ResponseEntity<ErrorResponse> answerNotFoundException(AnswerNotFoundException ex, WebRequest request){
+        return new ResponseEntity<ErrorResponse>(
+                new ErrorResponse().code(ex.getCode()).message(ex.getErrorMessage()), HttpStatus.NOT_FOUND //Http status code 404 when given answer does not exist in database
+        );
+    }
 }
