@@ -21,12 +21,23 @@ public class QuestionBusinessService {
     private QuestionDao questionDao;
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public QuestionEntity createQuestion(QuestionEntity questionEntity) {
+    public QuestionEntity createQuestion(QuestionEntity questionEntity, UserAuthTokenEntity userAuthToken) throws AuthorizationFailedException {
+
+        //Throw exception if user has logged out in which case logout time will not be null
+        if (userAuthToken.getLogoutAt() != null) {
+            throw new AuthorizationFailedException("ATHR-002", "User is signed out.Sign in first to post a question");
+        }
+
         return questionDao.createQuestion(questionEntity);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public QuestionEntity deleteQuestion(String questionId, UserAuthTokenEntity userAuthEntity) throws AuthorizationFailedException, InvalidQuestionException {
+
+        //Throw exception if user has logged out in which case logout time will not be null
+        if (userAuthEntity.getLogoutAt() != null) {
+            throw new AuthorizationFailedException("ATHR-002", "User is signed out.Sign in first to delete a question");
+        }
 
         QuestionEntity questionEntity = validateQuestion(questionId);
         UserEntity userEntity = userAuthEntity.getUser();
@@ -42,12 +53,23 @@ public class QuestionBusinessService {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public List<QuestionEntity> getAllQuestion()  {
+    public List<QuestionEntity> getAllQuestion(UserAuthTokenEntity userAuthToken) throws AuthorizationFailedException {
+
+        //Throw exception if user has logged out in which case logout time will not be null
+        if (userAuthToken.getLogoutAt() != null) {
+            throw new AuthorizationFailedException("ATHR-002", "User is signed out.Sign in first to get all questions");
+        }
+
         return questionDao.getAllQuestion();
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public List<QuestionEntity> getAllQuestionsByUser(String userId, UserAuthTokenEntity userAuthEntity) throws UserNotFoundException {
+    public List<QuestionEntity> getAllQuestionsByUser(String userId, UserAuthTokenEntity userAuthEntity) throws UserNotFoundException, AuthorizationFailedException {
+
+        //Throw exception if user has logged out in which case logout time will not be null
+        if (userAuthEntity.getLogoutAt() != null) {
+            throw new AuthorizationFailedException("ATHR-002", "User is signed out.Sign in first to get all questions posted by a specific user");
+        }
 
         UserEntity userEntity = userAuthEntity.getUser();
 
@@ -65,6 +87,11 @@ public class QuestionBusinessService {
     public QuestionEntity editQuestionContent(String questionId, UserAuthTokenEntity userAuthEntity , String content) throws AuthorizationFailedException, InvalidQuestionException {
 
        QuestionEntity questionEntity = validateQuestion(questionId);
+
+        //Throw exception if user has logged out in which case logout time will not be null
+        if (userAuthEntity.getLogoutAt() != null) {
+            throw new AuthorizationFailedException("ATHR-002", "User is signed out.Sign in first to edit the question");
+        }
 
        Integer authUserId = userAuthEntity.getUser().getId();
        Integer queUserId = questionEntity.getUser().getId();

@@ -43,7 +43,7 @@ public class QuestionController {
         questionEntity.setUser(userAuthEntity.getUser());
         questionEntity.setDate(now);
 
-        final QuestionEntity createdQuestion = questionBusinessService.createQuestion(questionEntity);
+        final QuestionEntity createdQuestion = questionBusinessService.createQuestion(questionEntity, userAuthEntity);
         QuestionResponse questionResponse = new QuestionResponse().id(createdQuestion.getUuid()).status("QUESTION CREATED");
 
         return new ResponseEntity<QuestionResponse>(questionResponse, HttpStatus.CREATED);
@@ -66,9 +66,9 @@ public class QuestionController {
     @RequestMapping(method = RequestMethod.GET, path = "/question/all" , produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<List<QuestionDetailsResponse>> getAllQuestion(@RequestHeader("authorization") final String authorization) throws AuthorizationFailedException {
 
-        authorizationBusinessService.authorizeUser(parseAuthToken(authorization));
+        final UserAuthTokenEntity userAuthToken = authorizationBusinessService.authorizeUser(parseAuthToken(authorization));
 
-        final List<QuestionEntity> allQuestion = questionBusinessService.getAllQuestion();
+        final List<QuestionEntity> allQuestion = questionBusinessService.getAllQuestion(userAuthToken);
 
         List<QuestionDetailsResponse> questionResponse = questionslist(allQuestion);
 

@@ -20,11 +20,6 @@ public class AuthorizationBusinessService {
             throw new AuthorizationFailedException("ATHR-001", "User has not signed in");
         }
 
-        //Throw exception if user has logged out in which case logout time will not be null
-        if (userAuthToken.getLogoutAt() != null) {
-            throw new AuthorizationFailedException("ATHR-002", "User is signed out.Sign in first to get user details");
-        }
-
         return userAuthToken;
     }
 }
