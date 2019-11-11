@@ -1,10 +1,10 @@
 package com.upgrad.quora.api.controller;
 
 import com.upgrad.quora.api.model.*;
+import com.upgrad.quora.service.business.AuthorizationBusinessService;
 import com.upgrad.quora.service.business.QuestionBusinessService;
-import com.upgrad.quora.service.business.UserAuthBusinessService;
 import com.upgrad.quora.service.entity.QuestionEntity;
-import com.upgrad.quora.service.entity.UserAuthEntity;
+import com.upgrad.quora.service.entity.UserAuthTokenEntity;
 import com.upgrad.quora.service.exception.AuthorizationFailedException;
 import com.upgrad.quora.service.exception.InvalidQuestionException;
 import com.upgrad.quora.service.exception.UserNotFoundException;
@@ -27,14 +27,14 @@ public class QuestionController {
     @Autowired
     private QuestionBusinessService questionBusinessService;
 
-    //Importing Authorizaton Business Service
+    //Importing Authorization Business Service
     @Autowired
-    private UserAuthBusinessService userAuthBusinessService;
+    private AuthorizationBusinessService authorizationBusinessService;
 
     @RequestMapping(method = RequestMethod.POST, path = "/question/create", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<QuestionResponse> createQuestion(@RequestHeader("authorization") final String authorization, final QuestionRequest questionRequest) throws AuthorizationFailedException {
 
-        final UserAuthEntity userAuthEntity = userAuthBusinessService.getUser(authorization);
+        final UserAuthTokenEntity userAuthEntity = authorizationBusinessService.authorizeUser(parseAuthToken(authorization));
 
         final ZonedDateTime now = ZonedDateTime.now();
         QuestionEntity questionEntity = new QuestionEntity();
@@ -43,7 +43,7 @@ public class QuestionController {
         questionEntity.setUser(userAuthEntity.getUser());
         questionEntity.setDate(now);
 
-        final QuestionEntity createdQuestion = questionBusinessService.createQuestion(questionEntity , userAuthEntity);
+        final QuestionEntity createdQuestion = questionBusinessService.createQuestion(questionEntity);
         QuestionResponse questionResponse = new QuestionResponse().id(createdQuestion.getUuid()).status("QUESTION CREATED");
 
         return new ResponseEntity<QuestionResponse>(questionResponse, HttpStatus.CREATED);
@@ -53,7 +53,7 @@ public class QuestionController {
     public ResponseEntity<QuestionDeleteResponse> deleteQuestion(@RequestHeader("authorization") final String authorization, @PathVariable("questionId") final String questionid )
          throws AuthorizationFailedException , InvalidQuestionException {
 
-        final UserAuthEntity userAuthEntity = userAuthBusinessService.getUser(authorization);
+        final UserAuthTokenEntity userAuthEntity = authorizationBusinessService.authorizeUser(parseAuthToken(authorization));
 
         QuestionEntity deletedQuestion = questionBusinessService.deleteQuestion(questionid, userAuthEntity);
         QuestionDeleteResponse questionDeleteResponse = new QuestionDeleteResponse().id(deletedQuestion.getUuid()).status("QUESTION DELETED");
@@ -66,9 +66,9 @@ public class QuestionController {
     @RequestMapping(method = RequestMethod.GET, path = "/question/all" , produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<List<QuestionDetailsResponse>> getAllQuestion(@RequestHeader("authorization") final String authorization) throws AuthorizationFailedException {
 
-        final UserAuthEntity userAuthEntity = userAuthBusinessService.getUser(authorization);
+        authorizationBusinessService.authorizeUser(parseAuthToken(authorization));
 
-        final List<QuestionEntity> allQuestion = questionBusinessService.getAllQuestion(userAuthEntity);
+        final List<QuestionEntity> allQuestion = questionBusinessService.getAllQuestion();
 
         List<QuestionDetailsResponse> questionResponse = questionslist(allQuestion);
 
@@ -79,7 +79,7 @@ public class QuestionController {
     public ResponseEntity<List<QuestionDetailsResponse>> getAllQuestionsByUser(@PathVariable("userId") final String userId, @RequestHeader("authorization") final String authorization )
         throws AuthorizationFailedException , UserNotFoundException {
 
-        final UserAuthEntity userAuthEntity = userAuthBusinessService.getUser(authorization);
+        final UserAuthTokenEntity userAuthEntity = authorizationBusinessService.authorizeUser(parseAuthToken(authorization));
 
         final List<QuestionEntity> allQuestionByUser = questionBusinessService.getAllQuestionsByUser(userId , userAuthEntity);
         //on successful creation of question
@@ -91,7 +91,7 @@ public class QuestionController {
     public ResponseEntity<QuestionEditResponse> editQuestionContent(@PathVariable("questionId") final String questionId , @RequestHeader("authorization") final String authorization, QuestionEditRequest questionEditRequest)
     throws AuthorizationFailedException,InvalidQuestionException {
 
-        final UserAuthEntity userAuthEntity = userAuthBusinessService.getUser(authorization);
+        final UserAuthTokenEntity userAuthEntity = authorizationBusinessService.authorizeUser(parseAuthToken(authorization));
         String content = questionEditRequest.getContent();
 
         QuestionEntity editedQuestion = questionBusinessService.editQuestionContent(questionId,userAuthEntity, content);
@@ -110,5 +110,12 @@ public class QuestionController {
             listofquestions.add(Response);
         }
         return listofquestions;
+    }
+
+    private String parseAuthToken(final String authorization){
+        //Authorization header will be in the format "Bearer JWT-token"
+        //Split the authorization header based on "Bearer " prefix to extract only the JWT token required for service class
+        //If authorization header doesn't contain "Bearer " prefix then pass it as it is since it will be from test cases
+        return authorization.startsWith("Bearer ")? authorization.split("Bearer ")[1]: authorization;
     }
 }

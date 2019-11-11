@@ -2,7 +2,7 @@ package com.upgrad.quora.service.business;
 
 import com.upgrad.quora.service.dao.QuestionDao;
 import com.upgrad.quora.service.entity.QuestionEntity;
-import com.upgrad.quora.service.entity.UserAuthEntity;
+import com.upgrad.quora.service.entity.UserAuthTokenEntity;
 import com.upgrad.quora.service.entity.UserEntity;
 import com.upgrad.quora.service.exception.AuthorizationFailedException;
 import com.upgrad.quora.service.exception.InvalidQuestionException;
@@ -21,27 +21,17 @@ public class QuestionBusinessService {
     private QuestionDao questionDao;
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public QuestionEntity createQuestion(QuestionEntity questionEntity, UserAuthEntity userAuthEntity) throws AuthorizationFailedException {
-
-        //If the user has signed out
-        if (userAuthEntity.getLogoutAt() != null) {
-            throw new AuthorizationFailedException("ATHR-002", "User is signed out.Sign in first to post a question");
-        }
+    public QuestionEntity createQuestion(QuestionEntity questionEntity) {
         return questionDao.createQuestion(questionEntity);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public QuestionEntity deleteQuestion(String questionId, UserAuthEntity userAuthEntity) throws AuthorizationFailedException, InvalidQuestionException {
+    public QuestionEntity deleteQuestion(String questionId, UserAuthTokenEntity userAuthEntity) throws AuthorizationFailedException, InvalidQuestionException {
 
-        QuestionEntity questionEntity = questionDao.getQuestionByUuid(questionId);
+        QuestionEntity questionEntity = validateQuestion(questionId);
         UserEntity userEntity = userAuthEntity.getUser();
         String role = userEntity.getRole();
-        //TO check if the user is logedout or not and provide the necessary exception
-        if (userAuthEntity.getLogoutAt() != null) {
-            throw new AuthorizationFailedException("ATHR-002", "User is signed out.Sign in first to delete a question");
-        } else if (questionEntity == null) {
-            throw new InvalidQuestionException("QUES-001", "Entered question uuid does not exist");
-        }
+
         Integer authUserId = userAuthEntity.getUser().getId();
         Integer queUserId = questionEntity.getUser().getId();
         //if user is not admin and also trying to delete other question.
@@ -52,22 +42,16 @@ public class QuestionBusinessService {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public List<QuestionEntity> getAllQuestion(UserAuthEntity userAuthEntity) throws AuthorizationFailedException {
-        //user siginto get the required questions
-        if (userAuthEntity.getLogoutAt() != null) {
-            throw new AuthorizationFailedException("ATHR-002", "User is signed out.Sign in first to get all questions");
-        }
+    public List<QuestionEntity> getAllQuestion()  {
         return questionDao.getAllQuestion();
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public List<QuestionEntity> getAllQuestionsByUser(String userId, UserAuthEntity userAuthEntity) throws AuthorizationFailedException, UserNotFoundException {
+    public List<QuestionEntity> getAllQuestionsByUser(String userId, UserAuthTokenEntity userAuthEntity) throws UserNotFoundException {
 
         UserEntity userEntity = userAuthEntity.getUser();
-        //checking if the user is signed in or not
-        if (userAuthEntity.getLogoutAt() != null) {
-            throw new AuthorizationFailedException("ATHR-002", "User is signed out.Sign in first to get all questions posted by a specific user");
-        }else if (!userEntity.getUuid().equals(userId)) {
+
+        if (!userEntity.getUuid().equals(userId)) {
             throw new UserNotFoundException("USR-001", "User with entered uuid whose question details are to be seen does not exist");
         }
         return questionDao.getAllQuestionsByUser(userId);
@@ -78,15 +62,10 @@ public class QuestionBusinessService {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public QuestionEntity editQuestionContent(String questionId, UserAuthEntity userAuthEntity , String content) throws AuthorizationFailedException, InvalidQuestionException {
+    public QuestionEntity editQuestionContent(String questionId, UserAuthTokenEntity userAuthEntity , String content) throws AuthorizationFailedException, InvalidQuestionException {
 
-       QuestionEntity questionEntity = questionDao.getQuestionByUuid(questionId);
+       QuestionEntity questionEntity = validateQuestion(questionId);
 
-        if (userAuthEntity.getLogoutAt() != null) {
-            throw new AuthorizationFailedException("ATHR-002", "User is signed out.Sign in first to edit the question");
-        } else if (questionEntity == null) {
-            throw new InvalidQuestionException("QUES-001", "Entered question uuid does not exist");
-        }
        Integer authUserId = userAuthEntity.getUser().getId();
        Integer queUserId = questionEntity.getUser().getId();
         if (authUserId != queUserId){
@@ -96,16 +75,7 @@ public class QuestionBusinessService {
         return  questionDao.editQuestion(questionEntity);
     }
 
-    private boolean compareUser(UserAuthEntity authEntity, QuestionEntity queEntity){
-        Integer authUserId = authEntity.getUser().getId();
-        Integer queUserId = queEntity.getUser().getId();
-        if (authUserId == queUserId){
-            return true;
-        }
-        return false;
-    }
-
-    public QuestionEntity validateQuestion(String questionId) throws InvalidQuestionException {
+     public QuestionEntity validateQuestion(String questionId) throws InvalidQuestionException {
         QuestionEntity questionEntity = questionDao.getQuestionByUuid(questionId);
         if(questionEntity==null) {
             throw new InvalidQuestionException("QUES-001","The question entered is invalid");
