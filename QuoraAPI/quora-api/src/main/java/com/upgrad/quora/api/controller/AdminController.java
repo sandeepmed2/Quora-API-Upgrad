@@ -16,11 +16,16 @@ public class AdminController {
 
     @Autowired
     private UserBusinessService userBusinessService;
-   //admin is accessing to delete
+
+    //admin is accessing to delete
     @RequestMapping(method = RequestMethod.DELETE, path = "/admin/user/{userId}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<UserDeleteResponse> deleteUser(@PathVariable("userId") final String uuid,
                                                          @RequestHeader("authorization") final String authorization) throws AuthorizationFailedException, UserNotFoundException {
-        userBusinessService.deleteUser(uuid,authorization);
+        //Authorization header will be in the format "Bearer JWT-token"
+        //Split the authorization header based on "Bearer " prefix to extract only the JWT token required for service class
+        //If authorization header doesn't contain "Bearer " prefix then pass it as it is since it will be from test cases
+        String authToken = authorization.startsWith("Bearer ")? authorization.split("Bearer ")[1]: authorization;
+        userBusinessService.deleteUser(uuid,authToken);
         //on successful deletion of the user
         UserDeleteResponse userDeleteResponse = new UserDeleteResponse().id(uuid).status("USER SUCCESSFULLY DELETED");
         return new ResponseEntity<UserDeleteResponse>(userDeleteResponse, HttpStatus.OK);

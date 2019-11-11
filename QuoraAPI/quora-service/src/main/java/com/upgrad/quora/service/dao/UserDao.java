@@ -78,4 +78,8 @@ public class UserDao {
     public void updateLogOutTime(final UserAuthTokenEntity userAuthTokenEntity){
         entityManager.merge(userAuthTokenEntity);
     }
+
+    public void deleteUser(final UserEntity userEntity){
+        entityManager.remove(userEntity);
+    }
 }
