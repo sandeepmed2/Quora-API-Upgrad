@@ -1,94 +1,114 @@
 package com.upgrad.quora.api.controller;
 
-import com.upgrad.quora.api.model.GetAllQuestionsResponse;
-//import com.upgrad.quora.api.model.SignoutResponse;
-//import com.upgrad.quora.api.model.SignupUserRequest;
-//import com.upgrad.quora.api.model.SignupUserResponse;
-import com.upgrad.quora.service.business.GetAllQuestionsBusinessService;
-//import com.upgrad.quora.service.business.SignoutBusinessService;
-//import com.upgrad.quora.service.business.SignupBusinessService;
-import com.upgrad.quora.service.entity.UserAuthTokenEntity;
-import com.upgrad.quora.service.entity.UserEntity;
-import com.upgrad.quora.service.exception.AuthenticationFailedException;
-//import com.upgrad.quora.service.exception.SignOutRestrictedException;
-//import com.upgrad.quora.service.exception.SignUpRestrictedException;
+import com.upgrad.quora.api.model.*;
+import com.upgrad.quora.service.business.QuestionBusinessService;
+import com.upgrad.quora.service.business.UserAuthBusinessService;
+import com.upgrad.quora.service.entity.QuestionEntity;
+import com.upgrad.quora.service.entity.UserAuthEntity;
+import com.upgrad.quora.service.exception.AuthorizationFailedException;
+import com.upgrad.quora.service.exception.InvalidQuestionException;
+import com.upgrad.quora.service.exception.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.Base64;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/")
 public class QuestionController {
 
-//    @Autowired
-//    private SignupBusinessService signupBusinessService;
-
+    //Importing the QuestionBusiness Service.
     @Autowired
-    private SigninBusinessService signinBusinessService;
+    private QuestionBusinessService questionBusinessService;
 
-//    @Autowired
-//    private SignoutBusinessService signoutBusinessService;
+    //Importing Authorizaton Business Service
+    @Autowired
+    private UserAuthBusinessService userAuthBusinessService;
 
-//    @RequestMapping(method= RequestMethod.POST, path="/user/signup", consumes= MediaType.APPLICATION_JSON_UTF8_VALUE, produces=MediaType.APPLICATION_JSON_UTF8_VALUE)
-//    public ResponseEntity<SignupUserResponse> signup(final SignupUserRequest signupUserRequest) throws SignUpRestrictedException {
-//
-//        final UserEntity userEntity = new UserEntity();
-//        userEntity.setUuid(UUID.randomUUID().toString());
-//        userEntity.setFirstName(signupUserRequest.getFirstName());
-//        userEntity.setLastName(signupUserRequest.getLastName());
-//        userEntity.setUserName(signupUserRequest.getUserName());
-//        userEntity.setEmail(signupUserRequest.getEmailAddress());
-//        userEntity.setPassword(signupUserRequest.getPassword());
-//        userEntity.setCountry(signupUserRequest.getCountry());
-//        userEntity.setAboutMe(signupUserRequest.getAboutMe());
-//        userEntity.setDob(signupUserRequest.getDob());
-//        userEntity.setRole("nonadmin"); //Role for new users is nonadmin by default
-//        userEntity.setContactNumber(signupUserRequest.getContactNumber());
-//
-//        final UserEntity createdUserEntity = signupBusinessService.signup(userEntity);
-//        SignupUserResponse userResponse = new SignupUserResponse().id(createdUserEntity.getUuid()).status("USER SUCCESSFULLY REGISTERED");
-//        return new ResponseEntity<SignupUserResponse>(userResponse,HttpStatus.CREATED);
-//    }
+    @RequestMapping(method = RequestMethod.POST, path = "/question/create", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity<QuestionResponse> createQuestion(@RequestHeader("authorization") final String authorization, final QuestionRequest questionRequest) throws AuthorizationFailedException {
 
-    @RequestMapping(method = RequestMethod.POST, path = "/user/getAllQuestions", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public ResponseEntity<GetAllQuestions> getAllQuestions(@RequestHeader("authorization") final String authorization) throws AuthenticationFailedException {
+        final UserAuthEntity userAuthEntity = userAuthBusinessService.getUser(authorization);
 
-        //The authorization header will be in the format "Basic base64encoded username:password"
-        //First split the header and separate Basic to retrieve the base64encoded username:password
-        //Decode the base64encoded string and split it based on : to retrieve username and password
-        byte[] decode = Base64.getDecoder().decode(authorization.split("Basic ")[1]);
-        String decodedText = new String(decode);
-        String[] decodedArray = decodedText.split(":");
+        final ZonedDateTime now = ZonedDateTime.now();
+        QuestionEntity questionEntity = new QuestionEntity();
+        questionEntity.setUuid(UUID.randomUUID().toString());
+        questionEntity.setContent(questionRequest.getContent());
+        questionEntity.setUser(userAuthEntity.getUser());
+        questionEntity.setDate(now);
 
-        UserAuthTokenEntity userAuthToken = signinBusinessService.signin(decodedArray[0],decodedArray[1]);
-        UserEntity user = userAuthToken.getUser();
+        final QuestionEntity createdQuestion = questionBusinessService.createQuestion(questionEntity , userAuthEntity);
+        QuestionResponse questionResponse = new QuestionResponse().id(createdQuestion.getUuid()).status("QUESTION CREATED");
 
-//        //Signin response will be the response body for a successful signin request
-//        SigninResponse signinResponse = new SigninResponse().id(user.getUuid()).message("SIGNED IN SUCCESSFULLY");
-
-        //JWT access token is added to the successful sigin response header
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("access_token",userAuthToken.getAccessToken());
-        return new ResponseEntity<SigninResponse>(signinResponse,headers,HttpStatus.OK);
+        return new ResponseEntity<QuestionResponse>(questionResponse, HttpStatus.CREATED);
     }
 
-//    @RequestMapping(method = RequestMethod.POST, path = "/user/signout", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-//    public ResponseEntity<SignoutResponse> signout(@RequestHeader("authorization") final String authorization) throws SignOutRestrictedException{
-//        //Authorization header will be in the format "Bearer JWT-token"
-//        //Split the authorization header based on "Bearer " prefix to extract only the JWT token required for service class
-//        UserEntity user = signoutBusinessService.signout(authorization.split("Bearer ")[1]);
-//
-//        SignoutResponse signoutResponse = new SignoutResponse().id(user.getUuid()).message("SIGNED OUT SUCCESSFULLY");
-//        return new ResponseEntity<SignoutResponse>(signoutResponse,HttpStatus.OK);
-//    }
+    @RequestMapping(method = RequestMethod.DELETE , path = "/question/delete/{questionId}" ,  produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity<QuestionDeleteResponse> deleteQuestion(@RequestHeader("authorization") final String authorization, @PathVariable("questionId") final String questionid )
+         throws AuthorizationFailedException , InvalidQuestionException {
 
+        final UserAuthEntity userAuthEntity = userAuthBusinessService.getUser(authorization);
+
+        QuestionEntity deletedQuestion = questionBusinessService.deleteQuestion(questionid, userAuthEntity);
+        QuestionDeleteResponse questionDeleteResponse = new QuestionDeleteResponse().id(deletedQuestion.getUuid()).status("QUESTION DELETED");
+        //on successful deletion of the question
+        return new ResponseEntity<QuestionDeleteResponse>(questionDeleteResponse, HttpStatus.OK);
+
+    }
+
+    //code Get all question
+    @RequestMapping(method = RequestMethod.GET, path = "/question/all" , produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity<List<QuestionDetailsResponse>> getAllQuestion(@RequestHeader("authorization") final String authorization) throws AuthorizationFailedException {
+
+        final UserAuthEntity userAuthEntity = userAuthBusinessService.getUser(authorization);
+
+        final List<QuestionEntity> allQuestion = questionBusinessService.getAllQuestion(userAuthEntity);
+
+        List<QuestionDetailsResponse> questionResponse = questionslist(allQuestion);
+
+        return new ResponseEntity<List<QuestionDetailsResponse>>(questionResponse, HttpStatus.OK);
+    }
+    //code to get all question basd on user ID
+    @RequestMapping(method = RequestMethod.GET , path = "/question/all/{userId}" , produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity<List<QuestionDetailsResponse>> getAllQuestionsByUser(@PathVariable("userId") final String userId, @RequestHeader("authorization") final String authorization )
+        throws AuthorizationFailedException , UserNotFoundException {
+
+        final UserAuthEntity userAuthEntity = userAuthBusinessService.getUser(authorization);
+
+        final List<QuestionEntity> allQuestionByUser = questionBusinessService.getAllQuestionsByUser(userId , userAuthEntity);
+        //on successful creation of question
+        return new ResponseEntity<List<QuestionDetailsResponse>>(questionslist(allQuestionByUser), HttpStatus.OK);
+
+    }
+    //code to edit of question
+    @RequestMapping(method = RequestMethod.PUT , path = "/question/edit/{questionId}" ,consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,produces = MediaType.APPLICATION_JSON_UTF8_VALUE )
+    public ResponseEntity<QuestionEditResponse> editQuestionContent(@PathVariable("questionId") final String questionId , @RequestHeader("authorization") final String authorization, QuestionEditRequest questionEditRequest)
+    throws AuthorizationFailedException,InvalidQuestionException {
+
+        final UserAuthEntity userAuthEntity = userAuthBusinessService.getUser(authorization);
+        String content = questionEditRequest.getContent();
+
+        QuestionEntity editedQuestion = questionBusinessService.editQuestionContent(questionId,userAuthEntity, content);
+        QuestionEditResponse questionEditResponse = new QuestionEditResponse().id(editedQuestion.getUuid()).status("QUESTION EDITED");
+        //on successful edit of question
+        return new ResponseEntity<QuestionEditResponse>(questionEditResponse,HttpStatus.OK);
+    }
+
+    //code to assign  all questions to list
+    public List<QuestionDetailsResponse> questionslist(List<QuestionEntity> allQuestion){
+        List<QuestionDetailsResponse> listofquestions = new ArrayList<>();
+        for ( QuestionEntity questionEntity : allQuestion){
+            QuestionDetailsResponse Response = new QuestionDetailsResponse();
+            Response.id(questionEntity.getUuid());
+            Response.content(questionEntity.getContent());
+            listofquestions.add(Response);
+        }
+        return listofquestions;
+    }
 }
